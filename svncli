@@ -1,0 +1,28 @@
+#!/bin/sh
+# ****************************************************************************
+# Script created to navigate SVN repositories intuitively
+# Executing it creates an environment which appends any commands to the SVN command
+# ****************************************************************************
+
+function add_svn_cmd {
+  local command="svn "
+
+  if [[ "$1" == "svn" ]]; then
+    # Remove the first argument from the command line
+    shift
+  fi
+  
+  if [[ "$1" == "exit" ]]; then
+    exit
+  fi
+
+  local input="$@"
+  command+=$input
+  echo $command
+}
+
+
+read -e svn_arg
+full_command=$(add_svn_cmd $svn_arg)
+
+exec $full_command
