@@ -17,12 +17,18 @@ function add_svn_cmd {
   fi
 
   local input="$@"
-  command+=$input
-  echo $command
+  output_command+=$input
+  echo $output_command
 }
 
+echo "Welcome to the SVN command line interface! Please enter your username"
+read -r -p Username:
+read -p Password:
 
-read -e svn_arg
-full_command=$(add_svn_cmd $svn_arg)
-
-exec $full_command
+echo "Welcome to the SVN CLI. Use help for info on the commands. Use \"exit\" or Ctrl+C to leave the CLI"
+while true
+do
+  read -p svncli: -e svn_arg
+  full_command=$(add_svn_cmd $svn_arg)
+  (exec $full_command)
+done
