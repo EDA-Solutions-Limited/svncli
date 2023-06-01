@@ -6,29 +6,46 @@
 
 function add_svn_cmd {
   local command="svn "
+  local args="$@"
+  local global_args="--username $username --password $password --non-interactive"
 
-  if [[ "$1" == "svn" ]]; then
-    # Remove the first argument from the command line
-    shift
-  fi
-  
-  if [[ "$1" == "exit" ]]; then
-    exit
+  if [[ "$1" != "svn" ]]; then
+    command="svn $args $global_args"
+  else
+    command="$args $global_args"
   fi
 
-  local input="$@"
-  output_command+=$input
-  echo $output_command
+  echo $command
+}
+
+function add_creds {
+  none
 }
 
 echo "Welcome to the SVN command line interface! Please enter your username"
-read -r -p Username:
-read -p Password:
+read -p username: username
+read -r -s -p password: password
+svn_pdk_root="http://192.168.1.57/svn/PDKs"
+
+echo
+if svn ls $svn_pdk_root --username $username --password $password --non-interactive 2>&1 | grep -q "authorization failed"; then
+  echo "YOU SHALL NOT PASSSSSSS!!!!"
+  exit
+fi
 
 echo "Welcome to the SVN CLI. Use help for info on the commands. Use \"exit\" or Ctrl+C to leave the CLI"
+
 while true
 do
-  read -p svncli: -e svn_arg
+  read -p "$username svncli:" -e svn_arg
+
+  # Check for exit command
+  if grep -q "exit" <<< "$svn_arg"; then
+    exit
+  fi
+
+  # Clean arguments for valid svn command
   full_command=$(add_svn_cmd $svn_arg)
   (exec $full_command)
+
 done
