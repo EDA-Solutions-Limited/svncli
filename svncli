@@ -1,51 +1,144 @@
-#!/bin/sh
+#!/bin/bash -i
 # ****************************************************************************
 # Script created to navigate SVN repositories intuitively
 # Executing it creates an environment which appends any commands to the SVN command
 # ****************************************************************************
 
 function add_svn_cmd {
-  local command="svn "
-  local args="$@"
   local global_args="--username $username --password $password --non-interactive"
 
-  if [[ "$1" != "svn" ]]; then
-    command="svn $args $global_args"
-  else
-    command="$args $global_args"
-  fi
+  local args=("$@")
 
+  command="svn $args $global_args"
   echo $command
 }
 
-function add_creds {
-  none
+
+function change_repo {
+  pwd="$svn_root/$1"
+}
+
+function parse_dir {
+  local directory=$1
+  local prefix=$pwd
+
+  # Replace / with root repo path
+  if [[ ${directory:0:1} == "/" ]]; then
+    directory="${directory/#"/"/$svn_root/$repo/}"
+
+  # Replace .. with 1 level up
+  elif [[ ${directory:0:2} == ".." ]]; then
+    while [[ ${directory:0:2} == ".." ]]; do
+      prefix=${prefix%/*}
+      directory="${directory/#".."}"
+      directory="${directory/#"/"}"
+    done
+      directory="${directory/#""/$prefix/}"
+
+  # Replace . with pwd
+  elif [[ ${directory:0:1} == "." ]]; then
+    directory="${directory/#"."}"
+    directory="${directory/#"/"}"
+    directory="${directory/#""/$prefix/}"
+
+  # Prepend with pwd
+  else
+    directory="${directory/#""/$pwd/}"
+  fi
+  
+  # Clear trailing backslash
+  if [[ ${directory:(-1)} == "/" ]]; then
+    directory="${directory%"/"}"
+  fi
+  echo $directory
 }
 
 echo "Welcome to the SVN command line interface! Please enter your username"
-read -p username: username
-read -r -s -p password: password
-svn_pdk_root="http://192.168.1.57/svn/PDKs"
+read -p Username: username
+read -r -s -p Password: password
+svn_root="http://192.168.1.57/svn"
 
 echo
-if svn ls $svn_pdk_root --username $username --password $password --non-interactive 2>&1 | grep -q "authorization failed"; then
+
+#Check for authentication
+if svn ls $svn_root --username $username --password $password --non-interactive 2>&1 | grep -q "authorization failed"; then
   echo "YOU SHALL NOT PASSSSSSS!!!!"
   exit
 fi
 
+echo
 echo "Welcome to the SVN CLI. Use help for info on the commands. Use \"exit\" or Ctrl+C to leave the CLI"
+echo
+echo "Please choose a repository:"
+repolist="\
+	Designs
+	Khalids_folder
+	PDKs
+	Raymond
+	Western_automation_bg
+"
+echo "$repolist"
+read -p "Repository: " repo
+change_repo "$repo"
 
+# User Input Loop
 while true
 do
-  read -p "$username svncli:" -e svn_arg
+  #Runs readline wrapper around cat to get user input, replaces spaces with newlines and assigns each line as array entries to variable user_arg
+  autocomplete=$(svn ls $pwd --username $username --password $password --non-interactive)
+
+  # User input loop, trap command prevents Ctrl+C as it breaks terminal, making commands invisible
+  trap '' SIGINT
+  mapfile -t user_arg < <(rlwrap -S "[$username@$pwd] " -o -f <(echo "${autocomplete[@]}") cat | tr ' ' '\n ')
+  trap - SIGINT
+
+  # Clean arguments
+  if [[ "${user_arg[0]}" == "svn" ]]; then
+    user_arg=("${user_arg[@]:1}")
+  fi
 
   # Check for exit command
-  if grep -q "exit" <<< "$svn_arg"; then
+  if grep -q "exit" <<< "$user_arg" || grep -q "quit" <<< "$user_arg"; then
     exit
   fi
 
-  # Clean arguments for valid svn command
-  full_command=$(add_svn_cmd $svn_arg)
-  (exec $full_command)
+  # Alias ll to ls
+  if [[ "${user_arg[0]}" == "ll" ]]; then
+    user_arg[0]="ls"
+  fi
 
+  # Check for list command
+  if grep -q "ls" <<< "$user_arg" || grep -q "list" <<< "$user_arg"; then
+
+    if [ "${user_arg[1]}" == "" ]; then
+      user_arg+=($pwd)
+    else
+      user_arg[1]=$(parse_dir ${user_arg[1]})
+    fi
+  fi
+
+  # Check for change directory command
+  if grep -q "cd" <<< "$user_arg"; then
+    if [ -n "${user_arg[1]}" ]; then
+      pwd=$(parse_dir ${user_arg[1]})
+    fi
+    continue
+  fi
+
+  # Check for change repo command
+  if grep -q "cr" <<< "$user_arg" || grep -q "chrepo" <<< "$user_arg"; then
+    if [ -n "${user_arg[1]}" ]; then
+      change_repo ${user_arg[1]}
+    else
+      echo "Please choose a repo from: \n $repolist"
+    fi
+    continue
+  fi
+
+  # Convert to valid svn command
+  if [[ -n "${user_arg[@]}" ]]; then
+    full_command=$(add_svn_cmd "${user_arg[*]}")
+    echo $full_command
+    (exec $full_command)
+  fi
 done
