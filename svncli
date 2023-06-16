@@ -144,8 +144,9 @@ do
     "commit") # Check for commit command
       if [[ -z "${user_arg[1]}" ]]; then
         read -e -p "Choose files to commit: " addfiles
-        user_arg="commit $addfiles"
       fi
+      read -e -p "Add a comment: " comment
+      user_arg="commit -m $comment $addfiles"
       ;;
 
     "cr" | "chrepo") # Check for change repo command
@@ -160,6 +161,13 @@ do
     "exit" | "quit" | "qq") # Check for exit command
       exit
       ;;
+
+    "export") # Check for export command
+      if [[ -n "${user_arg[1]}" ]]; then
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
+
 
     "help") # Check for help command
        echo "
@@ -243,7 +251,12 @@ wc [relative path]	list files on local computer
   # Convert to valid svn command
   if [[ -n "${user_arg[@]}" ]]; then
     full_command=$(add_svn_cmd "${user_arg[*]}")
-    echo $full_command
+
+    #Debug mode
+    if [ "$1" == "-debug" ]; then
+      echo $full_command
+    fi
+    
     (exec $full_command)
   fi
 done
