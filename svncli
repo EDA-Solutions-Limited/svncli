@@ -15,7 +15,12 @@ function add_svn_cmd {
 
 
 function change_repo {
-  pwd="$svn_root/$1"
+  if [ -z "$1" ]; then
+    pwd="$svn_root/$last_repo"
+  else
+    pwd="$svn_root/$1"
+    echo $1 > ~/.svncli/last_repo
+  fi
 }
 
 function parse_dir {
@@ -53,9 +58,23 @@ function parse_dir {
   echo $directory
 }
 
+# Check cache folder
+if ! test -d ~/.svncli; then
+  mkdir ~/.svncli
+fi
+
+# Read cache variables
+read -r last_username < ~/.svncli/username
+read -r last_repo < ~/.svncli/last_repo
+
+# Username input
 echo "Welcome to the SVN command line interface! Please enter your username"
-read -p Username: username
+read -e -p Username: -i "$last_username" username
+echo $username > ~/.svncli/username
+
+# Password input
 read -r -s -p Password: password
+
 svn_root="http://192.168.1.57/svn"
 
 echo
@@ -78,7 +97,7 @@ repolist="\
 	Western_automation_bg
 "
 echo "$repolist"
-read -p "Repository: " repo
+repo=$(rlwrap -e "" -S "Repository [$last_repo]: " -o -f <(echo "$repolist") cat)
 change_repo "$repo"
 
 # User Input Loop
@@ -89,51 +108,137 @@ do
 
   # User input loop, trap command prevents Ctrl+C as it breaks terminal, making commands invisible
   trap '' SIGINT
-  mapfile -t user_arg < <(rlwrap -S "[$username@$pwd] " -o -f <(echo "${autocomplete[@]}") cat | tr ' ' '\n ')
+  mapfile -t user_arg < <(rlwrap -c -b "" -S "[$username@$pwd] " -o -f <(echo "${autocomplete[@]}") cat | tr ' ' '\n ')
   trap - SIGINT
 
-  # Clean arguments
-  if [[ "${user_arg[0]}" == "svn" ]]; then
-    user_arg=("${user_arg[@]:1}")
-  fi
+  # Command parsing
+  case "${user_arg[0]}" in
+    "add") # Check for add command
+      if [[ -z "${user_arg[1]}" ]]; then
+        read -e -p "Choose files to add (separated by spaces): " addfiles
+        user_arg="${user_arg[0]} $addfiles"
+      fi
+      ;;
 
-  # Check for exit command
-  if grep -q "exit" <<< "$user_arg" || grep -q "quit" <<< "$user_arg"; then
-    exit
-  fi
+    "cat") # Check for change directory command
+      if [ -n "${user_arg[1]}" ]; then
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
 
-  # Alias ll to ls
-  if [[ "${user_arg[0]}" == "ll" ]]; then
-    user_arg[0]="ls"
-  fi
+    "cd") # Check for change directory command
+      if [ -n "${user_arg[1]}" ]; then
+        pwd=$(parse_dir ${user_arg[1]})
+      fi
+      continue
+      ;;
 
-  # Check for list command
-  if grep -q "ls" <<< "$user_arg" || grep -q "list" <<< "$user_arg"; then
+    "co" | "checkout") # Check for checkout command
+      if [[ -z "${user_arg[1]}" ]]; then
+        user_arg+=($pwd)
+      else
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
 
-    if [ "${user_arg[1]}" == "" ]; then
-      user_arg+=($pwd)
-    else
-      user_arg[1]=$(parse_dir ${user_arg[1]})
-    fi
-  fi
+    "commit") # Check for commit command
+      if [[ -z "${user_arg[1]}" ]]; then
+        read -e -p "Choose files to commit: " addfiles
+        user_arg="commit $addfiles"
+      fi
+      ;;
 
-  # Check for change directory command
-  if grep -q "cd" <<< "$user_arg"; then
-    if [ -n "${user_arg[1]}" ]; then
-      pwd=$(parse_dir ${user_arg[1]})
-    fi
-    continue
-  fi
+    "cr" | "chrepo") # Check for change repo command
+      if [ -n "${user_arg[1]}" ]; then
+        change_repo ${user_arg[1]}
+      else
+        echo "Please choose a repo from: \n $repolist"
+      fi
+      continue
+      ;;
 
-  # Check for change repo command
-  if grep -q "cr" <<< "$user_arg" || grep -q "chrepo" <<< "$user_arg"; then
-    if [ -n "${user_arg[1]}" ]; then
-      change_repo ${user_arg[1]}
-    else
-      echo "Please choose a repo from: \n $repolist"
-    fi
-    continue
-  fi
+    "exit" | "quit" | "qq") # Check for exit command
+      exit
+      ;;
+
+    "help") # Check for help command
+       echo "
+SVNCLI Commands:
+chrepo | cr		Change repo
+realpath | rp		echos full svn url for file/dir
+svn command...		Runs command without any path parsing
+wc [relative path]	list files on local computer
+"
+      ;;
+
+    "import") # Check for import command
+      if [[ -z "${user_arg[2]}" ]]; then
+        if [[ -z "${user_arg[1]}" ]]; then
+          read -e -p "Choose path to commit: " addpath
+          read -e -p "Choose path to upload to: " addurl
+          addurl=$(parse_dir $addurl)
+          user_arg="${user_arg[0]} $addpath $addurl"
+        else
+          read -e -p "Choose path to commit: " addpath
+          user_arg="${user_arg[0]} $addpath ${user_arg[1]}"
+        fi
+      fi
+      ;;
+
+    "ll" | "ls" | "list") # Check for list command
+      if [[ "${user_arg[0]}" == "ll" ]]; then
+        user_arg[0]="ls"
+      fi
+      if [[ -z "${user_arg[1]}" ]]; then
+        user_arg+=($pwd)
+      else
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
+
+    "log") # Check for log command
+      if [[ -z "${user_arg[1]}" ]]; then
+        user_arg+=($pwd)
+      else
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
+
+    "move" | "mv") # Check for move command
+      for i in $(seq 1 ${#user_arg[@]}); do
+        if [ -n "${user_arg[$i]}" ]; then
+          user_arg[$i]=$(parse_dir ${user_arg[$i]})
+        fi
+      done
+      read -e -p "Add a comment: " comment
+      user_arg="move -m $comment ${user_arg[@]:1:}"
+      ;;
+
+    "realpath" | "rp") # Check for property list command
+      if [[ -n "${user_arg[1]}" ]]; then
+        echo $(parse_dir ${user_arg[1]})
+        continue
+      fi
+      ;;
+
+    "status") # Check for status command
+      if [[ -z "${user_arg[1]}" ]]; then
+        read -e -p "Choose files to check: " addfiles
+        user_arg="${user_arg[0]} $addfiles"
+      fi
+      ;;
+
+    "svn") # Clean arguments and run without parsing
+      user_arg=("${user_arg[@]:1}")
+      ;;
+
+
+    "wc") # Check for working copy command
+      ll "${user_arg[@]:1}"
+      continue
+      ;;
+
+  esac
 
   # Convert to valid svn command
   if [[ -n "${user_arg[@]}" ]]; then
