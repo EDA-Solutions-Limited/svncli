@@ -1,13 +1,12 @@
-# TITLE
+# SVNCLI
 
 <!-- PROJECT LOGO -->
 <p align="center">
+  <a href="https://github.com/EDA-Solutions-Limited/svncli"><strong>Explore the project »</strong></a>
   <br />
-  <a href="https://github.com/EDA-Solutions-Limited/<Your_project_name>"><strong>Explore the project »</strong></a>
-  <br />
-  <a href="https://github.com/EDA-Solutions-Limited/<Your_project_name>/issues">Report Bug</a>
+  <a href="https://github.com/EDA-Solutions-Limited/svncli/issues">Report Bug</a>
   ·
-  <a href="https://github.com/EDA-Solutions-Limited/<Your_project_name>/issues">Request Feature</a>
+  <a href="https://github.com/EDA-Solutions-Limited/svncli/issues">Request Feature</a>
 </p>
 
 <!-- TABLE OF CONTENTS -->
@@ -38,35 +37,33 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-YOUR DESCRIPTION
-
-### Built With
-
-* [Tcl](https://www.tcl.tk/about/language.html)
-* [Python](https://www.python.org/)
+The SVN commands on Linux can be tedious to use, as you have to type "svn" for every command and type the full url path when referencing to the SVN. There are several Linux SVN GUI clients, however, they are outdated and not included in some of the built-in repos.
+<br>
+This SVN CLI interfaces with the svn command, to create a constant user input loop, allowing for more intuitive interaction with the SVN via Linux command line.
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
 ### Installation
 
-INSTALL_STEP
-
-#### SECTION 1
-YOUR INSTRUCTIONS
+#### Manual Installation
+1. Move the svncli shell script to the desired location e.g. /opt/svncli/bin/
+2. Add the path to the PATH environment variable
 
 ### Usage
-
-USAGE NOTES
+1. Run "svncli" in the folder that you would like to interact with
+2. Enter your details and choose the repo that you would like to enter
+3. Use the svn subcommands without the "svn" commands, adding "svn" will run the command as absolute (as written in the terminal) in case the parsing of the command fails.
+4. Run "help" to get a list of the commands, the SVN CLI commands are also listed (maybe at the top)
 
 ### Notes:
-This script was tested on: YOUR SETUP
-<br>
+Some of the commands may have reduced functionality just to create a more intuitive experience.
 
 <!-- ROADMAP -->
 ## Roadmap
-
-N/A
+1. Add a prefix to substitute for SVN current path
+2. Create proper documentation on all the changed commands
+3. Streamline login process, maybe add password encryption and add auto-login during the same shell session
 
 <!-- CONTRIBUTING -->
 ## Contributing
