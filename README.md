@@ -47,9 +47,10 @@ This SVN CLI interfaces with the svn command, to create a constant user input lo
 ### Installation
 
 #### Manual Installation
-1. Move contents to the desired location e.g. /opt/svncli/
-2. Add the bin folder path to the PATH environment variable
-3. Edit the contents in the config folder to include your svn url and repo list
+1. Install svn and rlwrap
+2. Move contents to the desired location e.g. /opt/svncli/
+3. Add the bin folder path to the PATH environment variable
+4. Edit the contents in the config folder to include your svn url and repo list
 
 ### Usage
 1. Run "svncli" in the folder that you would like to interact with
