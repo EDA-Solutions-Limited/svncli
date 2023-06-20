@@ -1,0 +1,267 @@
+#!/bin/bash -i
+# ****************************************************************************
+# Script created to navigate SVN repositories intuitively
+# Executing it creates an environment which appends any commands to the SVN command
+# ****************************************************************************
+
+function add_svn_cmd {
+  # Prefix arguments with svn and suffix with global options
+  local global_args="--username $username --password $password --non-interactive"
+
+  local args=("$@")
+
+  command="svn $args $global_args"
+  echo $command
+}
+
+
+function change_repo {
+  if [ -z "$1" ]; then
+    pwd="$svn_root/$last_repo"
+  else
+    pwd="$svn_root/$1"
+    echo $1 > ~/.svncli/last_repo
+  fi
+}
+
+function parse_dir {
+  local directory=$1
+  local prefix=$pwd
+
+  # Replace / with root repo path
+  if [[ ${directory:0:1} == "/" ]]; then
+    directory="${directory/#"/"/$svn_root/$repo/}"
+
+  # Replace .. with 1 level up
+  elif [[ ${directory:0:2} == ".." ]]; then
+    while [[ ${directory:0:2} == ".." ]]; do
+      prefix=${prefix%/*}
+      directory="${directory/#".."}"
+      directory="${directory/#"/"}"
+    done
+      directory="${directory/#""/$prefix/}"
+
+  # Replace . with pwd
+  elif [[ ${directory:0:1} == "." ]]; then
+    directory="${directory/#"."}"
+    directory="${directory/#"/"}"
+    directory="${directory/#""/$prefix/}"
+
+  # Prepend with pwd
+  else
+    directory="${directory/#""/$pwd/}"
+  fi
+  
+  # Clear trailing backslash
+  if [[ ${directory:(-1)} == "/" ]]; then
+    directory="${directory%"/"}"
+  fi
+  echo $directory
+}
+
+# Check user cache folder
+if ! test -d ~/.svncli; then
+  mkdir ~/.svncli
+fi
+
+# Read cache variables
+last_username=$(cat ~/.svncli/username)
+last_repo=$(cat ~/.svncli/last_repo)
+
+
+# Username input
+echo "Welcome to the SVN command line interface! Please enter your username"
+read -e -p Username: -i "$last_username" username
+echo $username > ~/.svncli/username
+
+# Password input
+read -r -s -p "Password:" password
+
+if [[ $password == "" ]]; then
+  echo
+  echo "No password entered. Quitting SVN CLI..."
+  exit
+fi
+
+svn_root=$(cat "$(dirname $0)"/../config/svn_root)
+
+echo
+
+#Check for authentication
+if svn ls $svn_root --username $username --password $password --non-interactive 2>&1 | grep -q "authorization failed"; then
+  echo "YOU SHALL NOT PASSSSSSS!!!!"
+  exit
+fi
+
+echo
+echo "Welcome to the SVN CLI. Use \"help\" for info on the commands. Use \"exit\" or \"qq\" to leave the CLI"
+echo
+
+# Select a repo
+echo "Please choose a repository:"
+repolist=$(cat "$(dirname $0)"/../config/repolist)
+echo "$repolist"
+echo 
+
+repo=$(rlwrap -e "" -S "Repository [$last_repo]: " -o -f <(echo "$repolist") cat)
+change_repo "$repo"
+
+# User Input Loop
+while true
+do
+  #Runs readline wrapper around cat to get user input, replaces spaces with newlines and assigns each line as array entries to variable user_arg
+  autocomplete=$(svn ls $pwd --username $username --password $password --non-interactive)
+
+  # User input loop, trap command prevents Ctrl+C as it breaks terminal, making commands invisible
+  trap '' SIGINT
+  mapfile -t user_arg < <(rlwrap -c -b "" -S "[$username@$pwd] " -o -f <(echo "${autocomplete[@]}") cat | tr ' ' '\n ')
+  trap - SIGINT
+
+  # Command parsing
+  case "${user_arg[0]}" in
+    "add") # Check for add command
+      if [[ -z "${user_arg[1]}" ]]; then
+        read -e -p "Choose files to add (separated by spaces): " addfiles
+        user_arg="${user_arg[0]} $addfiles"
+      fi
+      ;;
+
+    "cat") # Check for change directory command
+      if [ -n "${user_arg[1]}" ]; then
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
+
+    "cd") # Check for change directory command
+      if [ -n "${user_arg[1]}" ]; then
+        pwd=$(parse_dir ${user_arg[1]})
+      fi
+      continue
+      ;;
+
+    "co" | "checkout") # Check for checkout command
+      if [[ -z "${user_arg[1]}" ]]; then
+        user_arg+=($pwd)
+      else
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
+
+    "commit" | "ci") # Check for commit command
+      if [[ -z "${user_arg[1]}" ]]; then
+        read -e -p "Choose files to commit: " addfiles
+      fi
+      read -e -p "Add a comment: " comment
+      user_arg="commit -m $comment $addfiles"
+      ;;
+
+    "cr" | "chrepo") # Check for change repo command
+      if [ -n "${user_arg[1]}" ]; then
+        change_repo ${user_arg[1]}
+      else
+        echo "Please choose a repo from:"
+        echo $repolist
+      fi
+      continue
+      ;;
+
+    "chwork" | "cwd") # Change local working directory command
+      cd "${user_arg[@]:1}"
+      continue
+      ;;
+
+    "exit" | "quit" | "qq") # Check for exit command
+      exit
+      ;;
+
+    "export") # Check for export command
+      if [[ -n "${user_arg[1]}" ]]; then
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
+
+
+    "help") # Check for help command
+       (source "$(dirname $0)/help" "${user_arg[1]}")
+       continue
+      ;;
+
+    "import") # Check for import command
+      if [[ -z "${user_arg[2]}" ]]; then
+        if [[ -z "${user_arg[1]}" ]]; then
+          read -e -p "Choose path to commit: " addpath
+          read -e -p "Choose path to upload to: " addurl
+          addurl=$(parse_dir $addurl)
+          user_arg="${user_arg[0]} $addpath $addurl"
+        else
+          read -e -p "Choose path to commit: " addpath
+          user_arg="${user_arg[0]} $addpath ${user_arg[1]}"
+        fi
+      fi
+      ;;
+
+    "ll" | "ls" | "list") # Check for list command
+      if [[ "${user_arg[0]}" == "ll" ]]; then
+        user_arg[0]="ls"
+      fi
+      if [[ -z "${user_arg[1]}" ]]; then
+        user_arg+=($pwd)
+      else
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
+
+    "log") # Check for log command
+      if [[ -z "${user_arg[1]}" ]]; then
+        user_arg+=($pwd)
+      else
+        user_arg[1]=$(parse_dir ${user_arg[1]})
+      fi
+      ;;
+
+    "lwd" | "pwd" | "lswork" | "wc") # List local working directory command
+      ll "${user_arg[@]:1}"
+      continue
+      ;;
+
+    "move" | "mv" | "rename" | "ren") # Check for move command
+      for i in $(seq 1 ${#user_arg[@]}); do
+        if [ -n "${user_arg[$i]}" ]; then
+          user_arg[$i]=$(parse_dir ${user_arg[$i]})
+        fi
+      done
+      read -e -p "Add a comment: " comment
+      user_arg="move -m $comment ${user_arg[@]:1:}"
+      ;;
+
+    "realpath" | "rp") # Check for property list command
+      if [[ -n "${user_arg[1]}" ]]; then
+        echo $(parse_dir ${user_arg[1]})
+        continue
+      fi
+      ;;
+
+    "status") # Check for status command
+      if [[ -z "${user_arg[1]}" ]]; then
+        read -e -p "Choose files to check: " addfiles
+        user_arg="${user_arg[0]} $addfiles"
+      fi
+      ;;
+
+    "svn") # Clean arguments and run without parsing
+      user_arg=("${user_arg[@]:1}")
+      ;;
+  esac
+
+  # Convert to valid svn command
+  if [[ -n "${user_arg[@]}" ]]; then
+    full_command=$(add_svn_cmd "${user_arg[*]}")
+
+    #Debug mode
+    if [ "$1" == "-debug" ]; then
+      echo $full_command
+    fi
+    
+    (exec $full_command 2>&1 | grep -v "Type 'svn help' for usage")
+  fi
+done

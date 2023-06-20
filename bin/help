@@ -1,0 +1,298 @@
+#!/bin/bash
+# ****************************************************************************
+# Help messages for commands available in SVN CLI
+# ****************************************************************************
+
+case "$1" in
+
+  "add")
+    echo "\
+add: Put files and directories under version control, scheduling
+them for addition to repository.  They will be added in next commit.
+usage: add [FILE]
+"
+    ;;
+
+  "cat")
+    echo "\
+cat: Output the content of specified files or URLs.
+usage: cat TARGET
+"
+    ;;
+
+  "cd")
+    echo "\
+cd: Change directory within the SVN
+usage: cd PATH
+
+Notes:
+- Using "\/" will replace it  with the root repository path
+- Using . and .. will replace it with the pwd and one-level up respectively
+- Refer to \"chrepo\" to change repository
+"
+    ;;
+
+  "co" | "checkout")
+    echo "\
+cd: Change directory within the SVN
+usage: cd PATH
+
+Notes:
+- Using "\/" will replace it  with the root repository path
+- Using . and .. will replace it with the pwd and one-level up respectively
+- Refer to \"chrepo\" to change repository
+"
+    ;;
+
+  "commit" | "ci" )
+    echo "\
+commit (ci): Send changes from your working copy to the repository.
+usage: commit [PATH...]
+
+  If any targets are (or contain) locked items, those will be
+  unlocked after a successful commit.
+"
+    ;;
+
+  "chrepo" | "cr" )
+    echo "\
+chrepo (cr): Changes pwd to root directory of another repository
+usage: chrepo <repository>
+
+  Using chrepo without any arguments will list the available repositories.
+"
+    ;;
+
+  "cwd" | "chwork" )
+    echo "\
+chwork (cwd): Change working copy directory
+usage: chwork ./folder
+
+Notes:
+  This is just an alias for the \"cd\" command as it is reserved for navigating the SVN in this CLI
+"
+    ;;
+
+  "exit" | "quit" | "qq" )
+    echo "\
+exit | quit (qq): Quits the script
+usage: exit
+
+  It's pretty self-explanatory :)
+"
+    ;;
+
+  "export" )
+    echo "\
+export: Create an unversioned copy of a tree.
+usage: export URL[@PEGREV] [PATH]
+
+  1. Exports a clean directory tree from the repository specified by
+     URL, at revision REV if it is given, otherwise at HEAD, into
+     PATH. If PATH is omitted, the last component of the URL is used
+     for the local directory name.
+"
+    ;;
+
+  "import" )
+    echo "\
+import: Commit an unversioned file or tree into the repository.
+usage: import [PATH] URL
+
+  Recursively commit a copy of PATH to URL.
+  If PATH is omitted '.' is assumed.
+  Parent directories are created as necessary in the repository.
+  If PATH is a directory, the contents of the directory are added
+  directly under URL.
+"
+    ;;
+
+  "ll" | "ls" | "list" )
+    echo "\
+list (ls): List directory entries in the repository.
+usage: list [TARGET[@REV]...]
+
+  List each TARGET file and the contents of each TARGET directory as
+  they exist in the repository.  If TARGET is a working copy path, the
+  corresponding repository URL will be used. If specified, REV determines
+  in which revision the target is first looked up.
+
+  The default TARGET is '.', meaning the repository URL of the current
+  working directory.
+"
+    ;;
+
+  "log" )
+    echo "\
+log: Show the log messages for a set of revision(s) and/or path(s).
+usage: log URL[@REV] [PATH...]
+
+  Print the log messages for the PATHs (default: '.') under URL.
+  If specified, REV is the revision in which the URL is first
+  looked up, and the default revision range is REV:1; otherwise,
+  the URL is looked up in HEAD, and the default revision range is
+  HEAD:1.
+"
+    ;;
+
+  "lswork" | "pwd" | "lwd" | "wc" )
+    echo "\
+lwd (lswork, pwd, wc): Echos full local working directory of a file
+usage: wc ./folder
+
+Notes:
+  This is just an alias for the \"ll\" command as it is reserved for navigating the SVN in this CLI
+"
+    ;;
+
+  "move" | "mv" | "rename" | "ren")
+    echo "\
+move (mv, rename, ren): Move and/or rename something in working copy or repository.
+usage: move SRC... DST
+
+When moving multiple sources, they will be added as children of DST,
+which must be a directory.
+
+The SVN CLI only allows for:
+  URL -> URL:  complete server-side rename.
+"
+    ;;
+
+  "realpath" | "rp" )
+    echo "\
+realpath (rp): Echos full URL path of a file in the SVN
+usage: realpath URL
+"
+    ;;
+
+  "status" )
+    echo "\
+status (stat, st): Print the status of working copy files and directories.
+usage: status [PATH...]
+
+The first seven columns in the output are each one character wide:
+    First column: Says if item was added, deleted, or otherwise changed
+      ' ' no modifications
+      'A' Added
+      'C' Conflicted
+      'D' Deleted
+      'I' Ignored
+      'M' Modified
+      'R' Replaced
+      'X' an unversioned directory created by an externals definition
+      '?' item is not under version control
+      '!' item is missing (removed by non-svn command) or incomplete
+      '~' versioned item obstructed by some item of a different kind
+    Second column: Modifications of a file's or directory's properties
+      ' ' no modifications
+      'C' Conflicted
+      'M' Modified
+    Third column: Whether the working copy directory is locked
+      ' ' not locked
+      'L' locked
+    Fourth column: Scheduled commit will contain addition-with-history
+      ' ' no history scheduled with commit
+      '+' history scheduled with commit
+    Fifth column: Whether the item is switched or a file external
+      ' ' normal
+      'S' the item has a Switched URL relative to the parent
+      'X' a versioned file created by an eXternals definition
+    Sixth column: Repository lock token
+      (without -u)
+      ' ' no lock token
+      'K' lock token present
+      (with -u)
+      ' ' not locked in repository, no lock token
+      'K' locked in repository, lock toKen present
+      'O' locked in repository, lock token in some Other working copy
+      'T' locked in repository, lock token present but sTolen
+      'B' not locked in repository, lock token present but Broken
+    Seventh column: Whether the item is the victim of a tree conflict
+      ' ' normal
+      'C' tree-Conflicted
+    If the item is a tree conflict victim, an additional line is printed
+    after the item's status line, explaining the nature of the conflict.
+
+  The out-of-date information appears in the ninth column (with -u):
+      '*' a newer revision exists on the server
+      ' ' the working copy is up to date
+
+  Remaining fields are variable width and delimited by spaces:
+    The working revision (with -u or -v; '-' if the item is copied)
+    The last committed revision and last committed author (with -v)
+    The working copy path is always the final field, so it can
+      include spaces.
+
+  The presence of a question mark ('?') where a working revision, last
+  committed revision, or last committed author was expected indicates
+  that the information is unknown or irrelevant given the state of the
+  item (for example, when the item is the result of a copy operation).
+  The question mark serves as a visual placeholder to facilitate parsing.
+
+  Example output:
+    svn status wc
+     M      wc/bar.c
+    A  +    wc/qax.c
+
+    svn status -u wc
+     M             965   wc/bar.c
+            *      965   wc/foo.c
+    A  +             -   wc/qax.c
+    Status against revision:   981
+
+    svn status --show-updates --verbose wc
+     M             965      938 kfogel       wc/bar.c
+            *      965      922 sussman      wc/foo.c
+    A  +             -      687 joe          wc/qax.c
+                   965      687 joe          wc/zig.c
+    Status against revision:   981
+
+    svn status
+     M      wc/bar.c
+    !     C wc/qaz.c
+          >   local missing, incoming edit upon update
+    D       wc/qax.c
+"
+    ;;
+
+  "svn" )
+    echo "\
+svn: Runs the svn command without any parsing from the CLI
+usage: svn <subcommand> [args]
+
+Notes:
+  This will continue to add the username, password and non-interactive global arguments
+"
+    ;;
+
+  "")
+    echo "\
+Type 'svn help <subcommand>' for help on a specific subcommand.
+
+Available SVNCLI Commands:
+  add
+  cat
+  cd (navigates SVN)
+  checkout | co
+  commit | ci
+  chrepo | cr (changes SVN repo)
+  cwd | chwork (changes local working dir)
+  exit | quit | qq
+  export
+  import
+  ll | ls | list
+  log
+  lwd | pwd | lswork | wc (lists local working dir)
+  move | mv
+  realpath | rp (returns SVN file path)
+  status
+  svn
+
+Type \"svn help [subcommand]\" for the original svn help documentation
+"
+    ;;
+
+  *)
+    (exec svn help $1)
+    ;;
+esac
