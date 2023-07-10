@@ -89,12 +89,11 @@ echo
 
 #Check for authentication
 if svn ls $svn_root --username $username --password $password --non-interactive 2>&1 | grep -q "authorization failed"; then
+  echo "Wrong username or password."
   echo "YOU SHALL NOT PASSSSSSS!!!!"
   exit
 fi
 
-echo
-echo "Welcome to the SVN CLI. Use \"help\" for info on the commands. Use \"exit\" or \"qq\" to leave the CLI"
 echo
 
 # Select a repo
@@ -105,6 +104,12 @@ echo
 
 repo=$(rlwrap -e "" -S "Repository [$last_repo]: " -o -f <(echo "$repolist") cat)
 change_repo "$repo"
+
+echo
+echo "Welcome to the SVN CLI. Use \"help\" for info on the commands. Use \"exit\" or \"qq\" to leave the CLI"
+echo "Use \"ls\" and \"cd\" to navigate the SVN repo. Change repo using \"cr\""
+echo "Use \"pwd\", \"lwd\" and \"cwd\" to navigate local working directory"
+echo
 
 # User Input Loop
 while true
@@ -122,6 +127,9 @@ do
     "add") # Check for add command
       if [[ -z "${user_arg[1]}" ]]; then
         read -e -p "Choose files to add (separated by spaces): " addfiles
+        if [[ -z "$addfiles" ]]; then
+          addfiles="*"
+        fi
         user_arg="${user_arg[0]} $addfiles"
       fi
       ;;
@@ -149,10 +157,40 @@ do
 
     "commit" | "ci") # Check for commit command
       if [[ -z "${user_arg[1]}" ]]; then
-        read -e -p "Choose files to commit: " addfiles
+        (read -e -p "Choose files to commit [default is current dir]: " addfiles)
+      else
+        addfiles="${user_arg[1]}"
       fi
-      read -e -p "Add a comment: " comment
-      user_arg="commit -m $comment $addfiles"
+
+      if [[ -z "$addfiles" ]]; then
+        addfiles="."
+      fi
+
+      full_command="svn add $addfiles --force"
+      add_result=$(exec $full_command 2>&1 | grep -v "Type 'svn help' for usage")
+
+      # Check if file exists
+      if [[ ! $add_result =~ "Illegal target for the requested operation" ]]; then
+        #Comment saved to file and read in as -m comment is broken despite comment being put between quotes
+        (read -e -p "Add a comment: " comment)
+      else
+        echo "Error: No file found. Check if file exists using command \"lswork\" to list working directory"
+        continue
+      fi
+
+      echo $comment > ~/.svncli/commit_msg
+      msg_path=$(realpath ~/.svncli/commit_msg)
+
+      user_arg="commit $addfiles -F $msg_path"
+      full_command=$(add_svn_cmd "${user_arg[*]}")
+      commit_result=$(exec $full_command 2>&1 | grep -v "Type 'svn help' for usage")
+
+      if [[ -z "$commit_result" ]]; then
+        echo "No changes found in listed files. Commit not completed."
+      else
+        echo "$commit_result"
+      fi
+      continue
       ;;
 
     "cr" | "chrepo") # Check for change repo command
@@ -165,7 +203,7 @@ do
       continue
       ;;
 
-    "chwork" | "cwd") # Change local working directory command
+    "cdwork" | "cwd") # Change local working directory command
       cd "${user_arg[@]:1}"
       continue
       ;;
@@ -219,7 +257,7 @@ do
       fi
       ;;
 
-    "lwd" | "pwd" | "lswork" | "wc") # List local working directory command
+    "lwd" | "lswork" | "wc") # List local working directory command
       ll "${user_arg[@]:1}"
       continue
       ;;
@@ -232,6 +270,11 @@ do
       done
       read -e -p "Add a comment: " comment
       user_arg="move -m $comment ${user_arg[@]:1:}"
+      ;;
+
+    "pwd") # Show local working directory path
+      pwd
+      continue
       ;;
 
     "realpath" | "rp") # Check for property list command

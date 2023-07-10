@@ -49,6 +49,8 @@ Notes:
 commit (ci): Send changes from your working copy to the repository.
 usage: commit [PATH...]
 
+  NOTE: This command has been changed to add the item specified before committing
+
   If any targets are (or contain) locked items, those will be
   unlocked after a successful commit.
 "
@@ -63,10 +65,10 @@ usage: chrepo <repository>
 "
     ;;
 
-  "cwd" | "chwork" )
+  "cwd" | "cdwork" )
     echo "\
-chwork (cwd): Change working copy directory
-usage: chwork ./folder
+cdwork (cwd): Change working copy directory
+usage: cdwork ./folder
 
 Notes:
   This is just an alias for the \"cd\" command as it is reserved for navigating the SVN in this CLI
@@ -135,9 +137,9 @@ usage: log URL[@REV] [PATH...]
 "
     ;;
 
-  "lswork" | "pwd" | "lwd" | "wc" )
+  "lswork" | "lwd" | "wc" )
     echo "\
-lwd (lswork, pwd, wc): Echos full local working directory of a file
+lwd (lswork, wc): Echos full local working directory of a file
 usage: wc ./folder
 
 Notes:
@@ -155,6 +157,13 @@ which must be a directory.
 
 The SVN CLI only allows for:
   URL -> URL:  complete server-side rename.
+"
+    ;;
+
+  "pwd" )
+    echo "\
+pwd : Lists local working directory path
+usage: pwd
 "
     ;;
 
@@ -282,8 +291,9 @@ Available SVNCLI Commands:
   import
   ll | ls | list
   log
-  lwd | pwd | lswork | wc (lists local working dir)
+  lwd | lswork | wc (lists local working dir)
   move | mv
+  pwd
   realpath | rp (returns SVN file path)
   status
   svn
