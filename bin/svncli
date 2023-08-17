@@ -24,6 +24,20 @@ function change_repo {
   fi
 }
 
+function list_svn {
+  echo
+  echo "Listing current SVN directory"
+  echo $pwd
+  svn ls $pwd --username $username --password $password --non-interactive
+}
+
+function list_local {
+  echo
+  echo "Listing current working directory"
+  pwd
+  ll
+}
+
 function parse_dir {
   local directory=$1
   local prefix=$pwd
@@ -111,21 +125,24 @@ echo "Use \"ls\" and \"cd\" to navigate the SVN repo. Change repo using \"cr\""
 echo "Use \"pwd\", \"lwd\" and \"cwd\" to navigate local working directory"
 echo
 
+
+
 # User Input Loop
 while true
 do
   #Runs readline wrapper around cat to get user input, replaces spaces with newlines and assigns each line as array entries to variable user_arg
   autocomplete=$(svn ls $pwd --username $username --password $password --non-interactive)
 
-  # User input loop, trap command prevents Ctrl+C as it breaks terminal, making commands invisible
-  trap '' SIGINT
+  #trap command prevents Ctrl+C as it breaks terminal, now goes back to start of user input loop
+  trap "continue" SIGINT
+  # User input loop, making commands invisible
   mapfile -t user_arg < <(rlwrap -c -b "" -S "[$username@$pwd] " -o -f <(echo "${autocomplete[@]}") cat | tr ' ' '\n ')
-  trap - SIGINT
 
   # Command parsing
   case "${user_arg[0]}" in
     "add") # Check for add command
       if [[ -z "${user_arg[1]}" ]]; then
+        list_local
         read -e -p "Choose files to add (separated by spaces): " addfiles
         if [[ -z "$addfiles" ]]; then
           addfiles="*"
@@ -149,15 +166,40 @@ do
 
     "co" | "checkout") # Check for checkout command
       if [[ -z "${user_arg[1]}" ]]; then
-        user_arg+=($pwd)
+        list_svn
+
+        read -e -p "Choose files to checkout:  " cofiles
+        user_arg[1]="$cofiles"
       else
-        user_arg[1]=$(parse_dir ${user_arg[1]})
+        cofiles="${user_arg[1]}"
       fi
+      
+      cofiles=$(parse_dir $cofiles)
+
+      list_local
+      read -e -p "Where do you want to check it out to?: " copath
+
+      #change to new checked out directory      
+      IFS='/' read -ra folder_name <<< "$cofiles"
+      folder_name=${folder_name[-1]}
+      local_pwd=$(pwd)
+
+      copath="$local_pwd/$copath/$folder_name"
+
+      mkdir -p "${copath}"
+      cd "${copath}"
+      echo "Changed current working directory to ${copath}"
+      echo
+
+      unset user_arg
+      user_arg="checkout $cofiles $copath"
       ;;
 
     "commit" | "ci") # Check for commit command
       if [[ -z "${user_arg[1]}" ]]; then
-        (read -e -p "Choose files to commit [default is current dir]: " addfiles)
+        list_local
+        echo "[leave blank to check in everything in current folder]"
+        (read -e -p "Choose files to commit : " addfiles)
       else
         addfiles="${user_arg[1]}"
       fi
@@ -197,18 +239,39 @@ do
       if [ -n "${user_arg[1]}" ]; then
         change_repo ${user_arg[1]}
       else
-        echo "Please choose a repo from:"
         echo $repolist
+        read -e -p "Please choose a repo: " repo
+        change_repo $repo
       fi
       continue
       ;;
 
     "cdwork" | "cwd") # Change local working directory command
       cd "${user_arg[@]:1}"
+      pwd
       continue
       ;;
 
+    "delete" | "remove" | "rm" ) # Delete files from SVN
+      if [[ -z "${user_arg[1]}" ]]; then
+        list_svn
+        read -e -p "Choose files to delete: " delurl
+      else
+        delurl=${user_arg[1]}
+      fi
+
+      delurl=$(parse_dir $delurl)
+
+      read -e -p "Add a comment: " comment
+      echo $comment > ~/.svncli/commit_msg
+      msg_path=$(realpath ~/.svncli/commit_msg)
+
+      unset user_arg
+      user_arg="delete $delurl -F $msg_path --force"
+      ;;
+
     "exit" | "quit" | "qq") # Check for exit command
+      trap - SIGINT
       exit
       ;;
 
@@ -225,17 +288,32 @@ do
       ;;
 
     "import") # Check for import command
-      if [[ -z "${user_arg[2]}" ]]; then
-        if [[ -z "${user_arg[1]}" ]]; then
-          read -e -p "Choose path to commit: " addpath
-          read -e -p "Choose path to upload to: " addurl
-          addurl=$(parse_dir $addurl)
-          user_arg="${user_arg[0]} $addpath $addurl"
-        else
-          read -e -p "Choose path to commit: " addpath
-          user_arg="${user_arg[0]} $addpath ${user_arg[1]}"
-        fi
+      if [[ -z "${user_arg[1]}" ]]; then
+        list_local
+        read -e -p "Choose files to commit: " addpath
+      else
+        addpath=${user_arg[1]}
       fi
+      
+
+      addpath=$(realpath $addpath)
+      
+      IFS='/' read -ra file_name <<< "$addpath"
+      file_name=${file_name[-1]}
+
+      #Ask for URL to upload to, uses rlwrap for user input to allow autocomplete of SVN path
+      list_svn
+      autocomplete=$(svn ls $pwd --username $username --password $password --non-interactive)
+      mapfile -t addurl < <(rlwrap -c -b "" -S "Choose path to upload to: " -o -f <(echo "${autocomplete[@]}") cat | tr ' ' '\n ')
+      addurl=$(parse_dir $addurl)
+
+      read -e -p "Add a comment: " comment
+      echo $comment > ~/.svncli/commit_msg
+      msg_path=$(realpath ~/.svncli/commit_msg)
+
+      #User_arg is an array, so unset then set it as string
+      unset user_arg
+      user_arg="import $addpath $addurl/$file_name -F $msg_path"
       ;;
 
     "ll" | "ls" | "list") # Check for list command

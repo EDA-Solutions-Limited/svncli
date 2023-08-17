@@ -75,6 +75,13 @@ Notes:
 "
     ;;
 
+  "delete" | "remove" | "rm" )
+    echo "\
+delete (del, remove, rm): Remove files and directories from version control.
+usage: 1. delete URL...
+"
+    ;;
+
   "exit" | "quit" | "qq" )
     echo "\
 exit | quit (qq): Quits the script
