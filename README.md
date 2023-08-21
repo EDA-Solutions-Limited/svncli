@@ -1,5 +1,11 @@
 # SVNCLI
 
+<div align="center">
+  <a href="https://https://github.com/EDA-Solutions-Limited/svncli">
+    <img src="images/logo.png" alt="Logo" width="80" height="80">
+  </a>
+</div>
+
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/EDA-Solutions-Limited/svncli"><strong>Explore the project »</strong></a>
@@ -48,13 +54,22 @@ This SVN CLI interfaces with the svn command, to create a constant user input lo
 
 #### Manual Installation
 1. Install svn and rlwrap
-2. Move contents to the desired location e.g. /opt/svncli/
-3. Add the bin folder path to the PATH environment variable
-4. Edit the contents in the config folder to include your svn url and repo list
+   ```sh
+   sudo yum install svn
+   ```
+   ```sh
+   sudo yum install rlwrap
+   ```
+2. Move contents of this repository to the desired location e.g. /opt/svncli/
+3. Add the bin folder path to the PATH environment variable e.g. add the following to /etc/bashrc
+   ```
+   export PATH=$PATH:/opt/svncli/bin/
+   ```
+4. Edit the contents in the config folder to include your svn parent url and repo list
 
 ### Usage
 1. Run "svncli" in the folder that you would like to interact with
-2. Enter your details and choose the repo that you would like to enter
+2. Enter your login details and choose the repo that you would like to enter
 3. Use the svn subcommands without the "svn" commands, adding "svn" will run the command as absolute (as written in the terminal) in case the parsing of the command fails.
 4. Run "help" to get a list of the commands, or run "svn help" to get the original svn documentation
 
@@ -63,13 +78,14 @@ Some commands may have reduced functionality just to create a more intuitive exp
 
 <!-- ROADMAP -->
 ## Roadmap
-1. Add a prefix to substitute for SVN's current path
-2. Streamline the login process, maybe add password encryption and add auto-login during the same shell session
+1. Add a shortcut to substitute for SVN's current path
+2. Currently, pressing Ctrl+C cancels the command, but requires you to press enter to go back to main loop. Fix this.
+3. Streamline the login process, maybe add password encryption and add auto-login during the same shell session
 
 <!-- CONTRIBUTING -->
 ## Contributing
 
-Contributions are what makes the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
