@@ -136,6 +136,7 @@ do
   #trap command prevents Ctrl+C as it breaks terminal, now goes back to start of user input loop
   trap "continue" SIGINT
   # User input loop, making commands invisible
+  echo -e "\n"[Working Dir: $(pwd)]
   mapfile -t user_arg < <(rlwrap -c -b "" -S "[$username@$pwd] " -o -f <(echo "${autocomplete[@]}") cat | tr ' ' '\n ')
 
   # Command parsing
@@ -298,6 +299,7 @@ do
 
       addpath=$(realpath $addpath)
       
+      #Get file name, so that it creates the same file in SVN
       IFS='/' read -ra file_name <<< "$addpath"
       file_name=${file_name[-1]}
 

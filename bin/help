@@ -3,123 +3,139 @@
 # Help messages for commands available in SVN CLI
 # ****************************************************************************
 
-case "$1" in
+function create_hor_line() {
+  printf %"$COLUMNS"s |tr " " "-"
+  echo
+}
 
-  "add")
+case "$1" in
+# Blank string is added to each case statement to print all the help statements
+# This uses ;;& as fallback, so case statements continues checking other statements
+
+  "add" | "" )
+    create_hor_line
     echo "\
 add: Put files and directories under version control, scheduling
-them for addition to repository.  They will be added in next commit.
-usage: add [FILE]
+  them for addition to repository.  They will be added in next commit.
+  usage: add [FILE]
 "
-    ;;
+    ;;&
 
-  "cat")
+  "cat" | "" )
+    create_hor_line
     echo "\
 cat: Output the content of specified files or URLs.
-usage: cat TARGET
+  usage: cat TARGET[@REV]
 "
-    ;;
+    ;;&
 
-  "cd")
+  "cd" | "" )
+    create_hor_line
     echo "\
 cd: Change directory within the SVN
-usage: cd PATH
+  usage: cd PATH
 
-Notes:
-- Using "\/" will replace it  with the root repository path
-- Using . and .. will replace it with the pwd and one-level up respectively
-- Refer to \"chrepo\" to change repository
+  Notes:
+  - Using "\/" at the start of path will replace it with the root repository path
+  - Using . and .. will replace it with the current directory and one-level up respectively
+  - Refer to \"chrepo\" to change repository
 "
-    ;;
+    ;;&
 
-  "co" | "checkout")
+  "co" | "checkout" | "" )
+    create_hor_line
     echo "\
-cd: Change directory within the SVN
-usage: cd PATH
+checkout (co): Check out a working copy from a repository.
+  usage: checkout URL[@REV]...
 
-Notes:
-- Using "\/" will replace it  with the root repository path
-- Using . and .. will replace it with the pwd and one-level up respectively
-- Refer to \"chrepo\" to change repository
+  If specified, REV determines in which revision the URL is first
+  looked up.
+
+  e.g. co file_name@86
+    This will checkout revision 86 of file_name
 "
-    ;;
+    ;;&
 
-  "commit" | "ci" )
+  "commit" | "ci" | "" )
+    create_hor_line
     echo "\
 commit (ci): Send changes from your working copy to the repository.
-usage: commit [PATH...]
+  usage: commit [PATH...]
 
-  NOTE: This command has been changed to add the item specified before committing
+  NOTE: This command has been changed to add the item specified to the commit before committing
 
   If any targets are (or contain) locked items, those will be
   unlocked after a successful commit.
 "
-    ;;
+    ;;&
 
-  "chrepo" | "cr" )
+  "chrepo" | "cr" | "" )
+    create_hor_line
     echo "\
 chrepo (cr): Changes pwd to root directory of another repository
-usage: chrepo <repository>
+  usage: chrepo <repository>
 
   Using chrepo without any arguments will list the available repositories.
 "
-    ;;
+    ;;&
 
-  "cwd" | "cdwork" )
+  "cwd" | "cdwork" | "" )
+    create_hor_line
     echo "\
 cdwork (cwd): Change working copy directory
-usage: cdwork ./folder
+  usage: cdwork ./folder
 
-Notes:
+  Notes:
   This is just an alias for the \"cd\" command as it is reserved for navigating the SVN in this CLI
 "
-    ;;
+    ;;&
 
-  "delete" | "remove" | "rm" )
+  "delete" | "remove" | "rm" | "" )
+    create_hor_line
     echo "\
 delete (del, remove, rm): Remove files and directories from version control.
-usage: 1. delete URL...
+  usage: 1. delete URL...
 "
-    ;;
+    ;;&
 
-  "exit" | "quit" | "qq" )
+  "exit" | "quit" | "qq" | "" )
+    create_hor_line
     echo "\
 exit | quit (qq): Quits the script
-usage: exit
+  usage: exit
 
-  It's pretty self-explanatory :)
+  no, don't leave me :(
 "
-    ;;
+    ;;&
 
-  "export" )
+  "export" | "" )
+    create_hor_line
     echo "\
 export: Create an unversioned copy of a tree.
-usage: export URL[@PEGREV] [PATH]
+  usage: export URL[@REV] [PATH]
 
   1. Exports a clean directory tree from the repository specified by
      URL, at revision REV if it is given, otherwise at HEAD, into
      PATH. If PATH is omitted, the last component of the URL is used
      for the local directory name.
 "
-    ;;
+    ;;&
 
-  "import" )
+  "import"| "" )
+    create_hor_line
     echo "\
 import: Commit an unversioned file or tree into the repository.
-usage: import [PATH] URL
+  usage: import [PATH]
 
   Recursively commit a copy of PATH to URL.
-  If PATH is omitted '.' is assumed.
-  Parent directories are created as necessary in the repository.
-  If PATH is a directory, the contents of the directory are added
-  directly under URL.
 "
-    ;;
+    ;;&
 
-  "ll" | "ls" | "list" )
+  "ll" | "ls" | "list"| "" )
+    create_hor_line
     echo "\
 list (ls): List directory entries in the repository.
-usage: list [TARGET[@REV]...]
+  usage: list [TARGET[@REV]...]
 
   List each TARGET file and the contents of each TARGET directory as
   they exist in the repository.  If TARGET is a working copy path, the
@@ -129,12 +145,13 @@ usage: list [TARGET[@REV]...]
   The default TARGET is '.', meaning the repository URL of the current
   working directory.
 "
-    ;;
+    ;;&
 
-  "log" )
+  "log" | "" )
+    create_hor_line
     echo "\
 log: Show the log messages for a set of revision(s) and/or path(s).
-usage: log URL[@REV] [PATH...]
+  usage: log URL[@REV] [PATH...]
 
   Print the log messages for the PATHs (default: '.') under URL.
   If specified, REV is the revision in which the URL is first
@@ -142,46 +159,51 @@ usage: log URL[@REV] [PATH...]
   the URL is looked up in HEAD, and the default revision range is
   HEAD:1.
 "
-    ;;
+    ;;&
 
-  "lswork" | "lwd" | "wc" )
+  "lswork" | "lwd" | "wc" | "" )
+    create_hor_line
     echo "\
 lwd (lswork, wc): Echos full local working directory of a file
-usage: wc ./folder
+  usage: wc ./folder
 
-Notes:
-  This is just an alias for the \"ll\" command as it is reserved for navigating the SVN in this CLI
+  Notes:
+    This is just an alias for the \"ll\" command as it is reserved for navigating the SVN in this CLI
 "
-    ;;
+    ;;&
 
-  "move" | "mv" | "rename" | "ren")
+  "move" | "mv" | "rename" | "ren" | "" )
+    create_hor_line
     echo "\
 move (mv, rename, ren): Move and/or rename something in working copy or repository.
-usage: move SRC... DST
+  usage: move SRC... DST
 
-When moving multiple sources, they will be added as children of DST,
-which must be a directory.
+  When moving multiple sources, they will be added as children of DST,
+  which must be a directory.
 
-The SVN CLI only allows for:
-  URL -> URL:  complete server-side rename.
+  The SVN CLI only allows for:
+    URL -> URL:  complete server-side rename.
 "
-    ;;
+    ;;&
 
-  "pwd" )
+  "pwd" | "" )
+    create_hor_line
     echo "\
 pwd : Lists local working directory path
-usage: pwd
+  usage: pwd
 "
-    ;;
+    ;;&
 
-  "realpath" | "rp" )
+  "realpath" | "rp" | "" )
+    create_hor_line
     echo "\
 realpath (rp): Echos full URL path of a file in the SVN
-usage: realpath URL
+  usage: realpath URL
 "
-    ;;
+    ;;&
 
-  "status" )
+  "status" | "" )
+    create_hor_line
     echo "\
 status (stat, st): Print the status of working copy files and directories.
 usage: status [PATH...]
@@ -246,45 +268,48 @@ The first seven columns in the output are each one character wide:
   The question mark serves as a visual placeholder to facilitate parsing.
 
   Example output:
-    svn status wc
+    status wc
      M      wc/bar.c
     A  +    wc/qax.c
 
-    svn status -u wc
+    status -u wc
      M             965   wc/bar.c
             *      965   wc/foo.c
     A  +             -   wc/qax.c
     Status against revision:   981
 
-    svn status --show-updates --verbose wc
+    status --show-updates --verbose wc
      M             965      938 kfogel       wc/bar.c
             *      965      922 sussman      wc/foo.c
     A  +             -      687 joe          wc/qax.c
                    965      687 joe          wc/zig.c
     Status against revision:   981
 
-    svn status
+    status
      M      wc/bar.c
     !     C wc/qaz.c
           >   local missing, incoming edit upon update
     D       wc/qax.c
 "
-    ;;
+    ;;&
 
-  "svn" )
+  "svn" | "" )
+    create_hor_line
     echo "\
 svn: Runs the svn command without any parsing from the CLI
-usage: svn <subcommand> [args]
+  usage: svn <subcommand> [args]
 
-Notes:
+  E.g. svn help
+    This will run the help menu of the original svn program
+
+  Notes:
   This will continue to add the username, password and non-interactive global arguments
 "
-    ;;
+    ;;&
 
   "")
+    create_hor_line
     echo "\
-Type 'svn help <subcommand>' for help on a specific subcommand.
-
 Available SVNCLI Commands:
   add
   cat
@@ -305,11 +330,13 @@ Available SVNCLI Commands:
   status
   svn
 
+Type 'help <subcommand>' for help on a specific SVNCLI subcommand.
 Type \"svn help [subcommand]\" for the original svn help documentation
 "
     ;;
 
   *)
+    create_hor_line
     (exec svn help $1)
     ;;
 esac
