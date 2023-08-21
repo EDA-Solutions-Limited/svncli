@@ -1,7 +1,7 @@
 # SVNCLI
 
 <div align="center">
-  <a href="https://https://github.com/EDA-Solutions-Limited/svncli">
+  <a href="https://github.com/EDA-Solutions-Limited/svncli">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 </div>
